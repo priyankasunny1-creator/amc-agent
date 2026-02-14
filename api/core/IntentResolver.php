@@ -8,6 +8,30 @@ class IntentResolver
 
         $msg = self::normalizeMessage($message);
 
+        if (self::isWpClientListQuery($msg)) {
+            return [
+                'intent' => 'get_wp_active_clients_list',
+                'parameters' => [],
+                'confidence' => 'high',
+                'confidence_score' => 0.96,
+                'needs_clarification' => false,
+                'clarification' => null,
+                'missing_parameters' => []
+            ];
+        }
+
+        if (self::isDrupalClientListQuery($msg)) {
+            return [
+                'intent' => 'get_drupal_active_clients_list',
+                'parameters' => [],
+                'confidence' => 'high',
+                'confidence_score' => 0.96,
+                'needs_clarification' => false,
+                'clarification' => null,
+                'missing_parameters' => []
+            ];
+        }
+
         if (self::isWpPendingTodayQuery($msg)) {
             return [
                 'intent' => 'get_wp_tasks_summary',
@@ -142,6 +166,21 @@ class IntentResolver
             'clarification' => null,
             'missing_parameters' => []
         ];
+    }
+
+
+    private static function isWpClientListQuery(string $msg): bool
+    {
+        return str_contains($msg, 'wordpress')
+            && str_contains($msg, 'client')
+            && (str_contains($msg, 'list') || str_contains($msg, 'which') || str_contains($msg, 'active'));
+    }
+
+    private static function isDrupalClientListQuery(string $msg): bool
+    {
+        return str_contains($msg, 'drupal')
+            && str_contains($msg, 'client')
+            && (str_contains($msg, 'list') || str_contains($msg, 'which') || str_contains($msg, 'active'));
     }
 
     private static function normalizeMessage(string $message): string

@@ -220,6 +220,19 @@ return [
             AND c.name LIKE '%WP%'
     ",
 
+    'get_wp_active_clients_list' => "
+        SELECT
+            c.name AS client_name,
+            COUNT(t.id) AS open_tasks
+        FROM tasks_main t
+        JOIN clients c ON c.id = t.client_id
+        WHERE
+            t.completed = 0
+            AND c.name LIKE '%WP%'
+        GROUP BY c.id
+        ORDER BY open_tasks DESC
+    ",
+
     'get_drupal_tasks_summary' => "
         SELECT
             COUNT(t.id) AS ongoing_tasks,
@@ -229,6 +242,19 @@ return [
         WHERE
             t.completed = 0
             AND c.name LIKE '%Drupal%'
+    ",
+
+    'get_drupal_active_clients_list' => "
+        SELECT
+            c.name AS client_name,
+            COUNT(t.id) AS open_tasks
+        FROM tasks_main t
+        JOIN clients c ON c.id = t.client_id
+        WHERE
+            t.completed = 0
+            AND c.name LIKE '%Drupal%'
+        GROUP BY c.id
+        ORDER BY open_tasks DESC
     ",
 
     'get_laravel_tasks_summary' => "

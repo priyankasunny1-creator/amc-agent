@@ -7,10 +7,24 @@ class IntentClassifier
         $normalized = self::normalizeMessage($message);
 
         // Deterministic shortcuts for high-frequency queries.
+        if (self::isWpClientListQuery($normalized)) {
+            return [
+                'intent' => 'get_wp_active_clients_list',
+                'candidates' => ['get_wp_active_clients_list', 'get_wp_tasks_summary', 'get_clients_by_task_load']
+            ];
+        }
+
         if (self::isWpPendingQuery($normalized)) {
             return [
                 'intent' => 'get_wp_tasks_summary',
-                'candidates' => ['get_wp_tasks_summary', 'get_ongoing_tasks_summary', 'get_overdue_tasks_summary']
+                'candidates' => ['get_wp_tasks_summary', 'get_wp_active_clients_list', 'get_ongoing_tasks_summary']
+            ];
+        }
+
+        if (self::isDrupalClientListQuery($normalized)) {
+            return [
+                'intent' => 'get_drupal_active_clients_list',
+                'candidates' => ['get_drupal_active_clients_list', 'get_drupal_tasks_summary', 'get_clients_by_task_load']
             ];
         }
 
@@ -91,6 +105,21 @@ PROMPT;
             str_contains($msg, 'number of active clients') ||
             str_contains($msg, 'count of active clients')
         );
+    }
+
+
+    private static function isWpClientListQuery(string $msg): bool
+    {
+        return str_contains($msg, 'wordpress')
+            && (str_contains($msg, 'list') || str_contains($msg, 'which client') || str_contains($msg, 'clients'))
+            && str_contains($msg, 'client');
+    }
+
+    private static function isDrupalClientListQuery(string $msg): bool
+    {
+        return str_contains($msg, 'drupal')
+            && (str_contains($msg, 'list') || str_contains($msg, 'which client') || str_contains($msg, 'clients'))
+            && str_contains($msg, 'client');
     }
 
     private static function applyDerivedRules(string $message, string $intent): string

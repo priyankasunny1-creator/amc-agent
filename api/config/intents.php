@@ -86,6 +86,20 @@ return [
         'parameters' => []
     ],
 
+    'get_wp_active_clients_list' => [
+        'domain' => 'OPS',
+        'tier' => 'A',
+        'description' => 'List WordPress clients that currently have open tasks',
+        'parameters' => []
+    ],
+
+    'get_drupal_active_clients_list' => [
+        'domain' => 'OPS',
+        'tier' => 'A',
+        'description' => 'List Drupal clients that currently have open tasks',
+        'parameters' => []
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | CUSTOMER SUCCESS (CS) — AMC & CLIENT HEALTH
