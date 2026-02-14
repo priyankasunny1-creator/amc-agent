@@ -32,6 +32,78 @@ class IntentResolver
             ];
         }
 
+        if (self::isZeroHoursQuery($msg)) {
+            return [
+                'intent' => 'get_clients_with_zero_hours',
+                'parameters' => [],
+                'confidence' => 'high',
+                'confidence_score' => 0.96,
+                'needs_clarification' => false,
+                'clarification' => null,
+                'missing_parameters' => []
+            ];
+        }
+
+        if (self::isAmcThresholdQuery($msg)) {
+            return [
+                'intent' => 'get_clients_above_amc_usage_threshold',
+                'parameters' => [],
+                'confidence' => 'high',
+                'confidence_score' => 0.96,
+                'needs_clarification' => false,
+                'clarification' => null,
+                'missing_parameters' => []
+            ];
+        }
+
+        if (self::isUnassignedTasksListQuery($msg)) {
+            return [
+                'intent' => 'get_unassigned_open_tasks_list',
+                'parameters' => [],
+                'confidence' => 'high',
+                'confidence_score' => 0.96,
+                'needs_clarification' => false,
+                'clarification' => null,
+                'missing_parameters' => []
+            ];
+        }
+
+        if (self::isClientTasksQuery($msg)) {
+            return [
+                'intent' => 'get_tasks_by_client',
+                'parameters' => [],
+                'confidence' => 'high',
+                'confidence_score' => 0.94,
+                'needs_clarification' => false,
+                'clarification' => null,
+                'missing_parameters' => []
+            ];
+        }
+
+        if (self::isWeeklyHealthSummaryQuery($msg)) {
+            return [
+                'intent' => 'get_workload_health_summary',
+                'parameters' => [],
+                'confidence' => 'high',
+                'confidence_score' => 0.95,
+                'needs_clarification' => false,
+                'clarification' => null,
+                'missing_parameters' => []
+            ];
+        }
+
+        if (self::isOverdueByAssigneeQuery($msg)) {
+            return [
+                'intent' => 'get_tasks_by_assignee',
+                'parameters' => [],
+                'confidence' => 'high',
+                'confidence_score' => 0.95,
+                'needs_clarification' => false,
+                'clarification' => null,
+                'missing_parameters' => []
+            ];
+        }
+
         if (self::isWpPendingTodayQuery($msg)) {
             return [
                 'intent' => 'get_wp_tasks_summary',
@@ -47,28 +119,6 @@ class IntentResolver
         if (self::isActiveClientsQuery($msg)) {
             return [
                 'intent' => 'get_active_clients_count',
-                'parameters' => [],
-                'confidence' => 'high',
-                'confidence_score' => 0.95,
-                'needs_clarification' => false,
-                'clarification' => null,
-                'missing_parameters' => []
-            ];
-        }
-
-        // Deterministic high-confidence shortcut for threshold AMC prompt.
-        if (
-            str_contains($msg, 'how many') &&
-            str_contains($msg, 'client') &&
-            str_contains($msg, 'amc') &&
-            (
-                str_contains($msg, 'more than') ||
-                str_contains($msg, 'above') ||
-                str_contains($msg, '%')
-            )
-        ) {
-            return [
-                'intent' => 'get_clients_above_amc_usage_threshold',
                 'parameters' => [],
                 'confidence' => 'high',
                 'confidence_score' => 0.95,
@@ -151,7 +201,7 @@ class IntentResolver
                     'reason' => $promptReason,
                     'question' => !empty($missing)
                         ? ('Please provide: ' . implode(', ', $missing) . '.')
-                        : 'Can you clarify what specific report you want?'
+                        : 'Can you clarify the exact metric or client scope you want?'
                 ],
                 'missing_parameters' => $missing
             ];
@@ -181,6 +231,58 @@ class IntentResolver
         return str_contains($msg, 'drupal')
             && str_contains($msg, 'client')
             && (str_contains($msg, 'list') || str_contains($msg, 'which') || str_contains($msg, 'active'));
+    }
+
+    private static function isAmcThresholdQuery(string $msg): bool
+    {
+        return str_contains($msg, 'amc')
+            && (
+                str_contains($msg, 'threshold') ||
+                str_contains($msg, 'usage') ||
+                str_contains($msg, 'above') ||
+                str_contains($msg, 'over') ||
+                str_contains($msg, 'more than')
+            )
+            && str_contains($msg, 'client');
+    }
+
+    private static function isZeroHoursQuery(string $msg): bool
+    {
+        return str_contains($msg, 'amc')
+            && (
+                str_contains($msg, 'zero') ||
+                str_contains($msg, 'no ') ||
+                str_contains($msg, 'exhaust')
+            )
+            && str_contains($msg, 'hour')
+            && str_contains($msg, 'client');
+    }
+
+    private static function isUnassignedTasksListQuery(string $msg): bool
+    {
+        return str_contains($msg, 'unassigned')
+            && str_contains($msg, 'task')
+            && (str_contains($msg, 'list') || str_contains($msg, 'show'));
+    }
+
+    private static function isClientTasksQuery(string $msg): bool
+    {
+        return str_contains($msg, 'task')
+            && (str_contains($msg, 'client') || str_contains($msg, 'for '));
+    }
+
+    private static function isWeeklyHealthSummaryQuery(string $msg): bool
+    {
+        return str_contains($msg, 'weekly')
+            && str_contains($msg, 'amc')
+            && str_contains($msg, 'health')
+            && str_contains($msg, 'summary');
+    }
+
+    private static function isOverdueByAssigneeQuery(string $msg): bool
+    {
+        return str_contains($msg, 'overdue')
+            && str_contains($msg, 'assignee');
     }
 
     private static function normalizeMessage(string $message): string

@@ -346,6 +346,24 @@ return [
             AND (assignee_name IS NULL OR assignee_name = '')
     ",
 
+
+
+    'get_unassigned_open_tasks_list' => "
+        SELECT
+            c.name AS client_name,
+            t.task_title,
+            t.due_on AS due_date,
+            DATEDIFF(CURDATE(), t.created_at) AS task_age_days
+        FROM tasks_main t
+        JOIN clients c ON c.id = t.client_id
+        WHERE
+            t.completed = 0
+            AND (t.assignee_name IS NULL OR t.assignee_name = '')
+        ORDER BY
+            due_date ASC,
+            task_age_days DESC
+        LIMIT 100
+    ",
     'get_inactive_clients' => "
         SELECT
             c.name AS client_name,

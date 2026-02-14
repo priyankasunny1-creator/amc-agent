@@ -4,9 +4,9 @@ return [
     'keywords' => [
         'onboarding' => ['onboard', 'onboarding', 'new client', 'kickoff', 'handover'],
         'asana' => ['asana', 'task board', 'task assign', 'daily assignment'],
-        'reporting' => ['report', 'campaign', 'email report', 'monthly report', 'weekly report'],
+        'reporting' => ['report', 'reports', 'reporting', 'campaign', 'email report', 'monthly report', 'weekly report', 'weekly and monthly', 'amc health summary'],
         'escalation' => ['escalation', 'sla breach', 'risk', 'critical'],
-        'daily_ops' => ['daily standup', 'daily ops', 'today tasks', 'work allocation']
+        'daily_ops' => ['daily standup', 'daily ops', 'today tasks', 'work allocation', 'operations rhythm', 'daily operations rhythm', 'daily checklist']
     ],
     'sections' => [
         'onboarding' => [

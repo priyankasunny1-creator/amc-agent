@@ -28,6 +28,48 @@ class IntentClassifier
             ];
         }
 
+        if (self::isZeroHoursQuery($normalized)) {
+            return [
+                'intent' => 'get_clients_with_zero_hours',
+                'candidates' => ['get_clients_with_zero_hours', 'get_clients_at_risk', 'get_clients_needing_renewal']
+            ];
+        }
+
+        if (self::isAmcThresholdQuery($normalized)) {
+            return [
+                'intent' => 'get_clients_above_amc_usage_threshold',
+                'candidates' => ['get_clients_above_amc_usage_threshold', 'get_clients_at_risk', 'get_high_consumption_clients']
+            ];
+        }
+
+        if (self::isUnassignedTasksListQuery($normalized)) {
+            return [
+                'intent' => 'get_unassigned_open_tasks_list',
+                'candidates' => ['get_unassigned_open_tasks_list', 'get_unassigned_tasks_count', 'get_tasks_by_assignee']
+            ];
+        }
+
+        if (self::isClientTasksQuery($normalized)) {
+            return [
+                'intent' => 'get_tasks_by_client',
+                'candidates' => ['get_tasks_by_client', 'get_overdue_tasks', 'get_clients_by_task_load']
+            ];
+        }
+
+        if (self::isWeeklyHealthSummaryQuery($normalized)) {
+            return [
+                'intent' => 'get_workload_health_summary',
+                'candidates' => ['get_workload_health_summary', 'get_tasks_completed_this_week', 'get_clients_at_risk']
+            ];
+        }
+
+        if (self::isOverdueByAssigneeQuery($normalized)) {
+            return [
+                'intent' => 'get_tasks_by_assignee',
+                'candidates' => ['get_tasks_by_assignee', 'get_overdue_tasks', 'get_assignee_task_load']
+            ];
+        }
+
         if (self::isActiveClientsQuery($normalized)) {
             return [
                 'intent' => 'get_active_clients_count',
@@ -122,20 +164,68 @@ PROMPT;
             && str_contains($msg, 'client');
     }
 
+    private static function isAmcThresholdQuery(string $msg): bool
+    {
+        return str_contains($msg, 'amc')
+            && (
+                str_contains($msg, 'threshold') ||
+                str_contains($msg, 'usage') ||
+                str_contains($msg, 'above') ||
+                str_contains($msg, 'over') ||
+                str_contains($msg, 'more than')
+            )
+            && str_contains($msg, 'client');
+    }
+
+    private static function isZeroHoursQuery(string $msg): bool
+    {
+        return str_contains($msg, 'amc')
+            && (
+                str_contains($msg, 'zero') ||
+                str_contains($msg, 'no ') ||
+                str_contains($msg, 'exhaust')
+            )
+            && str_contains($msg, 'hour')
+            && str_contains($msg, 'client');
+    }
+
+    private static function isUnassignedTasksListQuery(string $msg): bool
+    {
+        return str_contains($msg, 'unassigned')
+            && str_contains($msg, 'task')
+            && (str_contains($msg, 'list') || str_contains($msg, 'show'));
+    }
+
+    private static function isClientTasksQuery(string $msg): bool
+    {
+        return str_contains($msg, 'task')
+            && (str_contains($msg, 'client') || str_contains($msg, 'for '));
+    }
+
+    private static function isWeeklyHealthSummaryQuery(string $msg): bool
+    {
+        return str_contains($msg, 'weekly')
+            && str_contains($msg, 'amc')
+            && str_contains($msg, 'health')
+            && str_contains($msg, 'summary');
+    }
+
+    private static function isOverdueByAssigneeQuery(string $msg): bool
+    {
+        return str_contains($msg, 'overdue')
+            && str_contains($msg, 'assignee');
+    }
+
     private static function applyDerivedRules(string $message, string $intent): string
     {
         $msg = strtolower($message);
 
-        if (
-            str_contains($msg, 'how many') &&
-            str_contains($msg, 'amc') &&
-            (
-                str_contains($msg, 'more than') ||
-                str_contains($msg, 'above') ||
-                str_contains($msg, 'over')
-            )
-        ) {
+        if (self::isAmcThresholdQuery($msg)) {
             return 'get_clients_above_amc_usage_threshold';
+        }
+
+        if (self::isZeroHoursQuery($msg)) {
+            return 'get_clients_with_zero_hours';
         }
 
         if (self::isActiveClientsQuery($msg)) {

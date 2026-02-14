@@ -72,6 +72,13 @@ return [
         'parameters' => []
     ],
 
+    'get_unassigned_open_tasks_list' => [
+        'domain' => 'OPS',
+        'tier' => 'A',
+        'description' => 'Detailed list of unassigned open tasks',
+        'parameters' => []
+    ],
+
     'get_inactive_clients' => [
         'domain' => 'OPS',
         'tier' => 'B',

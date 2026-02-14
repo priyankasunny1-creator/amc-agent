@@ -14,7 +14,10 @@ class PlaybookAdvisor
             'how do we',
             'how to',
             'guide',
-            'onboarding'
+            'onboarding',
+            'how should we',
+            'operations rhythm',
+            'weekly and monthly'
         ];
 
         $dataCues = [
@@ -26,7 +29,10 @@ class PlaybookAdvisor
             'overdue',
             'at risk',
             'task load',
-            'remaining hours'
+            'remaining hours',
+            'how many',
+            'above amc',
+            'zero amc'
         ];
 
         $hasGuideCue = false;
@@ -37,7 +43,14 @@ class PlaybookAdvisor
             }
         }
 
-        if (!$hasGuideCue) {
+        $isReportingGuideRequest = (str_contains($msg, 'weekly') || str_contains($msg, 'monthly'))
+            && (str_contains($msg, 'report') || str_contains($msg, 'reports'))
+            && (str_contains($msg, 'how should') || str_contains($msg, 'how to') || str_contains($msg, 'send'));
+
+        $isDailyOpsGuideRequest = str_contains($msg, 'daily')
+            && (str_contains($msg, 'operations rhythm') || str_contains($msg, 'ops rhythm') || str_contains($msg, 'checklist'));
+
+        if (!$hasGuideCue && !$isReportingGuideRequest && !$isDailyOpsGuideRequest) {
             return false;
         }
 

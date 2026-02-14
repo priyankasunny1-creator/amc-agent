@@ -39,11 +39,29 @@ class ResponseFormatter
             case 'get_unassigned_tasks_count':
                 return self::unassignedTasks($data);
 
+            case 'get_unassigned_open_tasks_list':
+                return self::unassignedOpenTasksList($data);
+
             case 'get_inactive_clients':
                 return self::inactiveClients($data);
 
             case 'get_active_clients_count':
                 return self::activeClientsCount($data);
+
+            case 'get_tasks_by_client':
+                return self::tasksByClient($data);
+
+            case 'get_overdue_tasks':
+                return self::overdueTaskList($data);
+
+            case 'get_tasks_by_assignee':
+                return self::tasksByAssignee($data);
+
+            case 'get_workload_health_summary':
+                return self::workloadHealthSummary($data);
+
+            case 'get_report_status':
+                return self::reportStatus($data);
 
             /* ============================
             * CS – CLIENT SUCCESS
@@ -462,6 +480,104 @@ class ResponseFormatter
             'summary' => "{$count} client(s) currently have active open tasks.",
             'severity' => $count > 30 ? 'medium' : 'low',
             'action' => 'Use this as active workload scope for CS and PM planning.',
+            'data' => $data
+        ];
+    }
+
+
+
+    private static function tasksByClient(array $data): array
+    {
+        $count = count($data);
+        return [
+            'summary' => $count === 0
+                ? 'No client tasks were found for the current scope.'
+                : "$count task record(s) were found across clients.",
+            'severity' => $count === 0 ? 'low' : 'info',
+            'data' => $data
+        ];
+    }
+
+    private static function overdueTaskList(array $data): array
+    {
+        $count = count($data);
+        return [
+            'summary' => $count === 0
+                ? 'No overdue open tasks were found.'
+                : "$count overdue task(s) require attention.",
+            'severity' => $count >= 20 ? 'high' : ($count > 0 ? 'medium' : 'low'),
+            'action' => $count > 0 ? 'Prioritize overdue tasks by owner and client impact.' : null,
+            'data' => $data
+        ];
+    }
+
+    private static function tasksByAssignee(array $data): array
+    {
+        $count = count($data);
+        return [
+            'summary' => $count === 0
+                ? 'No open tasks by assignee were found.'
+                : "$count open task record(s) were found by assignee.",
+            'severity' => $count === 0 ? 'low' : 'info',
+            'data' => $data
+        ];
+    }
+
+    private static function workloadHealthSummary(array $data): array
+    {
+        $row = $data[0] ?? [];
+        if (empty($row)) {
+            return [
+                'summary' => 'Workload health data is currently unavailable.',
+                'severity' => 'low',
+                'data' => []
+            ];
+        }
+
+        $open = (int)($row['open_tasks'] ?? 0);
+        $overdue = (int)($row['overdue_tasks'] ?? 0);
+        $unassigned = (int)($row['unassigned_tasks'] ?? 0);
+
+        return [
+            'summary' => "Weekly AMC health: $open open tasks, $overdue overdue, $unassigned unassigned.",
+            'severity' => $overdue > 0 || $unassigned > 0 ? 'high' : 'info',
+            'action' => 'Review overdue and unassigned queues in weekly planning.',
+            'data' => $data
+        ];
+    }
+
+    private static function reportStatus(array $data): array
+    {
+        $count = count($data);
+        return [
+            'summary' => $count === 0
+                ? 'No client reporting status records were found.'
+                : "$count reporting status record(s) were found.",
+            'severity' => $count === 0 ? 'low' : 'info',
+            'data' => $data
+        ];
+    }
+
+    private static function unassignedOpenTasksList(array $data): array
+    {
+        $count = count($data);
+
+        if ($count === 0) {
+            return [
+                'summary' => 'No unassigned open tasks were found.',
+                'severity' => 'low',
+                'data' => []
+            ];
+        }
+
+        return [
+            'summary' => "$count unassigned open task(s) are currently pending ownership.",
+            'severity' => $count >= 20 ? 'high' : 'medium',
+            'action' => 'Assign owners to avoid SLA slippage.',
+            'highlights' => array_map(
+                fn($r) => "{$r['client_name']} — {$r['task_title']}",
+                array_slice($data, 0, 5)
+            ),
             'data' => $data
         ];
     }
