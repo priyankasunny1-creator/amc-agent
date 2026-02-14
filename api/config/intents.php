@@ -79,6 +79,13 @@ return [
         'parameters' => []
     ],
 
+    'get_active_clients_count' => [
+        'domain' => 'OPS',
+        'tier' => 'A',
+        'description' => 'Count of clients with at least one open task',
+        'parameters' => []
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | CUSTOMER SUCCESS (CS) — AMC & CLIENT HEALTH

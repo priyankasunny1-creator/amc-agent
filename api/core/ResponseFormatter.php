@@ -42,6 +42,9 @@ class ResponseFormatter
             case 'get_inactive_clients':
                 return self::inactiveClients($data);
 
+            case 'get_active_clients_count':
+                return self::activeClientsCount($data);
+
             /* ============================
             * CS – CLIENT SUCCESS
             * ============================
@@ -445,6 +448,20 @@ class ResponseFormatter
                 $count > 0
                     ? 'Assign ownership to avoid delays.'
                     : 'All tasks are properly assigned.',
+            'data' => $data
+        ];
+    }
+
+
+
+    private static function activeClientsCount(array $data): array
+    {
+        $count = (int)($data[0]['active_clients'] ?? 0);
+
+        return [
+            'summary' => "{$count} client(s) currently have active open tasks.",
+            'severity' => $count > 30 ? 'medium' : 'low',
+            'action' => 'Use this as active workload scope for CS and PM planning.',
             'data' => $data
         ];
     }

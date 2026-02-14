@@ -6,7 +6,31 @@ class IntentResolver
     {
         $intentConfig = require __DIR__ . '/../config/intents.php';
 
-        $msg = strtolower($message);
+        $msg = self::normalizeMessage($message);
+
+        if (self::isWpPendingTodayQuery($msg)) {
+            return [
+                'intent' => 'get_wp_tasks_summary',
+                'parameters' => [],
+                'confidence' => 'high',
+                'confidence_score' => 0.95,
+                'needs_clarification' => false,
+                'clarification' => null,
+                'missing_parameters' => []
+            ];
+        }
+
+        if (self::isActiveClientsQuery($msg)) {
+            return [
+                'intent' => 'get_active_clients_count',
+                'parameters' => [],
+                'confidence' => 'high',
+                'confidence_score' => 0.95,
+                'needs_clarification' => false,
+                'clarification' => null,
+                'missing_parameters' => []
+            ];
+        }
 
         // Deterministic high-confidence shortcut for threshold AMC prompt.
         if (
@@ -25,7 +49,8 @@ class IntentResolver
                 'confidence' => 'high',
                 'confidence_score' => 0.95,
                 'needs_clarification' => false,
-                'clarification' => null
+                'clarification' => null,
+                'missing_parameters' => []
             ];
         }
 
@@ -47,7 +72,6 @@ class IntentResolver
                 $score += 1;
             }
 
-            // Earlier ranked candidates get a small score bonus.
             $score += max(0, 3 - $rank);
 
             $descriptionWords = explode(' ', strtolower($meta['description'] ?? ''));
@@ -118,5 +142,28 @@ class IntentResolver
             'clarification' => null,
             'missing_parameters' => []
         ];
+    }
+
+    private static function normalizeMessage(string $message): string
+    {
+        $msg = strtolower(trim($message));
+        $msg = str_replace(['wp'], ['wordpress'], $msg);
+        return preg_replace('/\s+/', ' ', $msg);
+    }
+
+    private static function isWpPendingTodayQuery(string $msg): bool
+    {
+        return str_contains($msg, 'wordpress')
+            && (str_contains($msg, 'pending') || str_contains($msg, 'active') || str_contains($msg, 'ongoing'))
+            && str_contains($msg, 'task');
+    }
+
+    private static function isActiveClientsQuery(string $msg): bool
+    {
+        return (
+            str_contains($msg, 'active clients') ||
+            str_contains($msg, 'number of active clients') ||
+            str_contains($msg, 'count of active clients')
+        );
     }
 }

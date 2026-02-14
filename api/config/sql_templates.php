@@ -333,6 +333,13 @@ return [
         ORDER BY last_task_date ASC
     ",
 
+    'get_active_clients_count' => "
+        SELECT
+            COUNT(DISTINCT t.client_id) AS active_clients
+        FROM tasks_main t
+        WHERE t.completed = 0
+    ",
+
     'get_clients_above_amc_usage_threshold' => "
     SELECT
         client_name,

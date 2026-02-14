@@ -4,6 +4,23 @@ class IntentClassifier
 {
     public static function classify(string $message): array
     {
+        $normalized = self::normalizeMessage($message);
+
+        // Deterministic shortcuts for high-frequency queries.
+        if (self::isWpPendingQuery($normalized)) {
+            return [
+                'intent' => 'get_wp_tasks_summary',
+                'candidates' => ['get_wp_tasks_summary', 'get_ongoing_tasks_summary', 'get_overdue_tasks_summary']
+            ];
+        }
+
+        if (self::isActiveClientsQuery($normalized)) {
+            return [
+                'intent' => 'get_active_clients_count',
+                'candidates' => ['get_active_clients_count', 'get_clients_by_task_load', 'get_ongoing_tasks_summary']
+            ];
+        }
+
         $intentConfig = require __DIR__ . '/../config/intents.php';
         $allowedIntents = array_keys($intentConfig);
 
@@ -27,7 +44,7 @@ PROMPT;
 
         $systemPrompt .= "\n\nAllowed intents:\n- " . implode("\n- ", $allowedIntents);
 
-        $raw = OpenAIClient::classify($systemPrompt, $message);
+        $raw = OpenAIClient::classify($systemPrompt, $normalized);
 
         $decoded = json_decode($raw, true);
 
@@ -37,33 +54,49 @@ PROMPT;
             !is_array($decoded['candidates']) ||
             empty($decoded['candidates'])
         ) {
-            throw new Exception('Invalid intent candidate response');
+            throw new ApiException(
+                'I could not confidently classify this query. Please rephrase with clear business terms.',
+                422,
+                ['phase' => 'intent_classification', 'raw_response' => $raw]
+            );
         }
 
-        // -----------------------------------------
-        // STAGE 1: Take top candidate
-        // -----------------------------------------
         $intent = $decoded['candidates'][0];
+        $intent = self::applyDerivedRules($normalized, $intent);
 
-        // -----------------------------------------
-        // STAGE 2: Apply deterministic derived rules
-        // -----------------------------------------
-        $intent = self::applyDerivedRules($message, $intent);
-
-        // -----------------------------------------
-        // FINAL OUTPUT (LOCKED FORMAT)
-        // -----------------------------------------
         return [
             'intent' => $intent,
             'candidates' => $decoded['candidates']
         ];
     }
 
+    private static function normalizeMessage(string $message): string
+    {
+        $msg = strtolower(trim($message));
+        $msg = str_replace(['wp', 'wordpresses'], ['wordpress', 'wordpress'], $msg);
+        return preg_replace('/\s+/', ' ', $msg);
+    }
+
+    private static function isWpPendingQuery(string $msg): bool
+    {
+        return str_contains($msg, 'wordpress')
+            && (str_contains($msg, 'pending') || str_contains($msg, 'active') || str_contains($msg, 'ongoing'))
+            && str_contains($msg, 'task');
+    }
+
+    private static function isActiveClientsQuery(string $msg): bool
+    {
+        return (
+            str_contains($msg, 'active clients') ||
+            str_contains($msg, 'number of active clients') ||
+            str_contains($msg, 'count of active clients')
+        );
+    }
+
     private static function applyDerivedRules(string $message, string $intent): string
     {
         $msg = strtolower($message);
 
-        // Aggregate AMC usage questions
         if (
             str_contains($msg, 'how many') &&
             str_contains($msg, 'amc') &&
@@ -74,6 +107,10 @@ PROMPT;
             )
         ) {
             return 'get_clients_above_amc_usage_threshold';
+        }
+
+        if (self::isActiveClientsQuery($msg)) {
+            return 'get_active_clients_count';
         }
 
         return $intent;
