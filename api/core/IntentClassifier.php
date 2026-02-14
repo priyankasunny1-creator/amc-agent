@@ -4,6 +4,79 @@ class IntentClassifier
 {
     public static function classify(string $message): array
     {
+        $normalized = self::normalizeMessage($message);
+
+        // Deterministic shortcuts for high-frequency queries.
+        if (self::isWpClientListQuery($normalized)) {
+            return [
+                'intent' => 'get_wp_active_clients_list',
+                'candidates' => ['get_wp_active_clients_list', 'get_wp_tasks_summary', 'get_clients_by_task_load']
+            ];
+        }
+
+        if (self::isWpPendingQuery($normalized)) {
+            return [
+                'intent' => 'get_wp_tasks_summary',
+                'candidates' => ['get_wp_tasks_summary', 'get_wp_active_clients_list', 'get_ongoing_tasks_summary']
+            ];
+        }
+
+        if (self::isDrupalClientListQuery($normalized)) {
+            return [
+                'intent' => 'get_drupal_active_clients_list',
+                'candidates' => ['get_drupal_active_clients_list', 'get_drupal_tasks_summary', 'get_clients_by_task_load']
+            ];
+        }
+
+        if (self::isZeroHoursQuery($normalized)) {
+            return [
+                'intent' => 'get_clients_with_zero_hours',
+                'candidates' => ['get_clients_with_zero_hours', 'get_clients_at_risk', 'get_clients_needing_renewal']
+            ];
+        }
+
+        if (self::isAmcThresholdQuery($normalized)) {
+            return [
+                'intent' => 'get_clients_above_amc_usage_threshold',
+                'candidates' => ['get_clients_above_amc_usage_threshold', 'get_clients_at_risk', 'get_high_consumption_clients']
+            ];
+        }
+
+        if (self::isUnassignedTasksListQuery($normalized)) {
+            return [
+                'intent' => 'get_unassigned_open_tasks_list',
+                'candidates' => ['get_unassigned_open_tasks_list', 'get_unassigned_tasks_count', 'get_tasks_by_assignee']
+            ];
+        }
+
+        if (self::isClientTasksQuery($normalized)) {
+            return [
+                'intent' => 'get_tasks_by_client',
+                'candidates' => ['get_tasks_by_client', 'get_overdue_tasks', 'get_clients_by_task_load']
+            ];
+        }
+
+        if (self::isWeeklyHealthSummaryQuery($normalized)) {
+            return [
+                'intent' => 'get_workload_health_summary',
+                'candidates' => ['get_workload_health_summary', 'get_tasks_completed_this_week', 'get_clients_at_risk']
+            ];
+        }
+
+        if (self::isOverdueByAssigneeQuery($normalized)) {
+            return [
+                'intent' => 'get_tasks_by_assignee',
+                'candidates' => ['get_tasks_by_assignee', 'get_overdue_tasks', 'get_assignee_task_load']
+            ];
+        }
+
+        if (self::isActiveClientsQuery($normalized)) {
+            return [
+                'intent' => 'get_active_clients_count',
+                'candidates' => ['get_active_clients_count', 'get_clients_by_task_load', 'get_ongoing_tasks_summary']
+            ];
+        }
+
         $intentConfig = require __DIR__ . '/../config/intents.php';
         $allowedIntents = array_keys($intentConfig);
 
@@ -27,7 +100,7 @@ PROMPT;
 
         $systemPrompt .= "\n\nAllowed intents:\n- " . implode("\n- ", $allowedIntents);
 
-        $raw = OpenAIClient::classify($systemPrompt, $message);
+        $raw = OpenAIClient::classify($systemPrompt, $normalized);
 
         $decoded = json_decode($raw, true);
 
@@ -37,43 +110,126 @@ PROMPT;
             !is_array($decoded['candidates']) ||
             empty($decoded['candidates'])
         ) {
-            throw new Exception('Invalid intent candidate response');
+            throw new ApiException(
+                'I could not confidently classify this query. Please rephrase with clear business terms.',
+                422,
+                ['phase' => 'intent_classification', 'raw_response' => $raw]
+            );
         }
 
-        // -----------------------------------------
-        // STAGE 1: Take top candidate
-        // -----------------------------------------
         $intent = $decoded['candidates'][0];
+        $intent = self::applyDerivedRules($normalized, $intent);
 
-        // -----------------------------------------
-        // STAGE 2: Apply deterministic derived rules
-        // -----------------------------------------
-        $intent = self::applyDerivedRules($message, $intent);
-
-        // -----------------------------------------
-        // FINAL OUTPUT (LOCKED FORMAT)
-        // -----------------------------------------
         return [
             'intent' => $intent,
             'candidates' => $decoded['candidates']
         ];
     }
 
+    private static function normalizeMessage(string $message): string
+    {
+        $msg = strtolower(trim($message));
+        $msg = str_replace(['wp', 'wordpresses'], ['wordpress', 'wordpress'], $msg);
+        return preg_replace('/\s+/', ' ', $msg);
+    }
+
+    private static function isWpPendingQuery(string $msg): bool
+    {
+        return str_contains($msg, 'wordpress')
+            && (str_contains($msg, 'pending') || str_contains($msg, 'active') || str_contains($msg, 'ongoing'))
+            && str_contains($msg, 'task');
+    }
+
+    private static function isActiveClientsQuery(string $msg): bool
+    {
+        return (
+            str_contains($msg, 'active clients') ||
+            str_contains($msg, 'number of active clients') ||
+            str_contains($msg, 'count of active clients')
+        );
+    }
+
+
+    private static function isWpClientListQuery(string $msg): bool
+    {
+        return str_contains($msg, 'wordpress')
+            && (str_contains($msg, 'list') || str_contains($msg, 'which client') || str_contains($msg, 'clients'))
+            && str_contains($msg, 'client');
+    }
+
+    private static function isDrupalClientListQuery(string $msg): bool
+    {
+        return str_contains($msg, 'drupal')
+            && (str_contains($msg, 'list') || str_contains($msg, 'which client') || str_contains($msg, 'clients'))
+            && str_contains($msg, 'client');
+    }
+
+    private static function isAmcThresholdQuery(string $msg): bool
+    {
+        return str_contains($msg, 'amc')
+            && (
+                str_contains($msg, 'threshold') ||
+                str_contains($msg, 'usage') ||
+                str_contains($msg, 'above') ||
+                str_contains($msg, 'over') ||
+                str_contains($msg, 'more than')
+            )
+            && str_contains($msg, 'client');
+    }
+
+    private static function isZeroHoursQuery(string $msg): bool
+    {
+        return str_contains($msg, 'amc')
+            && (
+                str_contains($msg, 'zero') ||
+                str_contains($msg, 'no ') ||
+                str_contains($msg, 'exhaust')
+            )
+            && str_contains($msg, 'hour')
+            && str_contains($msg, 'client');
+    }
+
+    private static function isUnassignedTasksListQuery(string $msg): bool
+    {
+        return str_contains($msg, 'unassigned')
+            && str_contains($msg, 'task')
+            && (str_contains($msg, 'list') || str_contains($msg, 'show'));
+    }
+
+    private static function isClientTasksQuery(string $msg): bool
+    {
+        return str_contains($msg, 'task')
+            && (str_contains($msg, 'client') || str_contains($msg, 'for '));
+    }
+
+    private static function isWeeklyHealthSummaryQuery(string $msg): bool
+    {
+        return str_contains($msg, 'weekly')
+            && str_contains($msg, 'amc')
+            && str_contains($msg, 'health')
+            && str_contains($msg, 'summary');
+    }
+
+    private static function isOverdueByAssigneeQuery(string $msg): bool
+    {
+        return str_contains($msg, 'overdue')
+            && str_contains($msg, 'assignee');
+    }
+
     private static function applyDerivedRules(string $message, string $intent): string
     {
         $msg = strtolower($message);
 
-        // Aggregate AMC usage questions
-        if (
-            str_contains($msg, 'how many') &&
-            str_contains($msg, 'amc') &&
-            (
-                str_contains($msg, 'more than') ||
-                str_contains($msg, 'above') ||
-                str_contains($msg, 'over')
-            )
-        ) {
+        if (self::isAmcThresholdQuery($msg)) {
             return 'get_clients_above_amc_usage_threshold';
+        }
+
+        if (self::isZeroHoursQuery($msg)) {
+            return 'get_clients_with_zero_hours';
+        }
+
+        if (self::isActiveClientsQuery($msg)) {
+            return 'get_active_clients_count';
         }
 
         return $intent;

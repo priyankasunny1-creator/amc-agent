@@ -1,8 +1,5 @@
 <?php
 
-// --------------------------------------------------
-// Load .env manually
-// --------------------------------------------------
 $envFile = __DIR__ . '/.env';
 
 if (is_readable($envFile)) {
@@ -11,33 +8,37 @@ if (is_readable($envFile)) {
         if ($line === '' || str_starts_with(trim($line), '#')) {
             continue;
         }
+
+        if (!str_contains($line, '=')) {
+            continue;
+        }
+
         [$key, $value] = explode('=', $line, 2);
         putenv(trim($key) . '=' . trim($value));
     }
 }
 
-// --------------------------------------------------
-// Database bootstrap (DEV SAFE)
-// --------------------------------------------------
 $config = require __DIR__ . '/config/database.php';
+
+$required = ['host', 'db', 'user', 'charset'];
+foreach ($required as $key) {
+    if (trim((string)($config[$key] ?? '')) === '') {
+        return null;
+    }
+}
 
 $dsn = "mysql:host={$config['host']};dbname={$config['db']};charset={$config['charset']}";
 
-$pdo = null;
-
 try {
-    $pdo = new PDO(
+    return new PDO(
         $dsn,
         $config['user'],
-        $config['pass'],
+        $config['pass'] ?? '',
         [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
         ]
     );
 } catch (Throwable $e) {
-    // Allow app to boot even if DB driver is missing
-    $pdo = null;
+    return null;
 }
-
-return $pdo;

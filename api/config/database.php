@@ -1,8 +1,9 @@
 <?php
+
 return [
-    'host' => 'localhost',
-    'db'   => 'pmgmiprojects_amc_dashboard',
-    'user' => 'pmgmiprojects_amc_dashboard',
-    'pass' => 'Saregamapa1!',
-    'charset' => 'utf8mb4'
+    'host' => getenv('DB_HOST') ?: 'localhost',
+    'db' => getenv('DB_NAME') ?: '',
+    'user' => getenv('DB_USER') ?: '',
+    'pass' => getenv('DB_PASS') ?: '',
+    'charset' => getenv('DB_CHARSET') ?: 'utf8mb4'
 ];
