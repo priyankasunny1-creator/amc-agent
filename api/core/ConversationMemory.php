@@ -21,12 +21,13 @@ class ConversationMemory
     {
         $dir = __DIR__ . '/../storage/conversations';
         if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            mkdir($dir, 0755, true);
         }
 
         file_put_contents(
             self::path($id),
-            json_encode($memory, JSON_PRETTY_PRINT)
+            json_encode($memory, JSON_PRETTY_PRINT),
+            LOCK_EX
         );
     }
 

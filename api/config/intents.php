@@ -248,4 +248,98 @@ return [
         'parameters' => []
     ]
 
+,
+
+    'get_client_overview' => [
+        'domain' => 'CS',
+        'tier' => 'B',
+        'description' => 'Overview of AMC contract and activity for all clients',
+        'parameters' => []
+    ],
+
+    'get_client_expiry' => [
+        'domain' => 'CS',
+        'tier' => 'A',
+        'description' => 'Clients and AMC contract expiry dates',
+        'parameters' => []
+    ],
+
+    'get_tasks_by_client' => [
+        'domain' => 'OPS',
+        'tier' => 'B',
+        'description' => 'Open and completed tasks grouped by client',
+        'parameters' => []
+    ],
+
+    'get_overdue_tasks' => [
+        'domain' => 'OPS',
+        'tier' => 'A',
+        'description' => 'Detailed list of overdue open tasks',
+        'parameters' => []
+    ],
+
+    'get_tasks_by_assignee' => [
+        'domain' => 'OPS',
+        'tier' => 'B',
+        'description' => 'Detailed list of open tasks grouped by assignee',
+        'parameters' => []
+    ],
+
+    'get_open_incidents' => [
+        'domain' => 'DEV',
+        'tier' => 'A',
+        'description' => 'Open incidents requiring action',
+        'parameters' => []
+    ],
+
+    'get_incidents_by_client' => [
+        'domain' => 'DEV',
+        'tier' => 'B',
+        'description' => 'Incident listing by client',
+        'parameters' => []
+    ],
+
+    'get_service_due_date' => [
+        'domain' => 'DEV',
+        'tier' => 'A',
+        'description' => 'Upcoming service schedule and due dates',
+        'parameters' => []
+    ],
+
+    'get_report_status' => [
+        'domain' => 'MGMT',
+        'tier' => 'B',
+        'description' => 'Status of client reporting syncs and generation',
+        'parameters' => []
+    ],
+
+    'get_open_workload_summary' => [
+        'domain' => 'MGMT',
+        'tier' => 'B',
+        'description' => 'Open workload summary across clients',
+        'parameters' => []
+    ],
+
+    'get_drupal_tasks_summary' => [
+        'domain' => 'DEV',
+        'tier' => 'B',
+        'description' => 'Summary of ongoing Drupal-related tasks',
+        'parameters' => []
+    ],
+
+    'get_laravel_tasks_summary' => [
+        'domain' => 'DEV',
+        'tier' => 'B',
+        'description' => 'Summary of ongoing Laravel-related tasks',
+        'parameters' => []
+    ],
+
+    'get_umbraco_tasks_summary' => [
+        'domain' => 'DEV',
+        'tier' => 'B',
+        'description' => 'Summary of ongoing Umbraco-related tasks',
+        'parameters' => []
+    ]
+
+
 ];

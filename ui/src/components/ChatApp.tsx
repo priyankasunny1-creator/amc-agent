@@ -37,7 +37,6 @@ export function ChatApp() {
       const payload = (await res.json()) as ApiResponseEnvelope;
 
       if (payload.conversation_id && payload.conversation_id !== conversationMeta.conversationId) {
-        // Keep local client in sync if server rotates/assigns a new conversation id.
         setConversationId(payload.conversation_id);
       }
 
@@ -51,13 +50,18 @@ export function ChatApp() {
         return;
       }
 
-      const summary = payload.data?.response?.summary || 'No response summary was provided.';
+      const response = payload.data?.response;
+      const summary = response?.summary || 'No response summary was provided.';
+
       setMessages(m => [
         ...m,
         {
           role: 'assistant',
           content: summary,
-          traceId: payload.trace_id
+          traceId: payload.trace_id,
+          intent: payload.data?.intent,
+          meta: payload.data?.meta,
+          response
         }
       ]);
     } catch (error) {

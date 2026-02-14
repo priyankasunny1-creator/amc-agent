@@ -2,27 +2,29 @@
 
 class IntentRegistry
 {
-    private static $intents;
+    private static array $intents = [];
 
-    public static function load()
+    public static function load(): array
     {
-        if (!self::$intents) {
+        if (empty(self::$intents)) {
             self::$intents = require __DIR__ . '/../config/intents.php';
         }
+
         return self::$intents;
     }
 
-    public static function validate($intent, $params)
+    public static function validate(string $intent, array $params): void
     {
         $intents = self::load();
 
         if (!isset($intents[$intent])) {
-            throw new Exception("Unknown intent: $intent");
+            throw new Exception("Unknown intent: {$intent}");
         }
 
-        foreach ($intents[$intent]['required_params'] as $param) {
-            if (!isset($params[$param])) {
-                throw new Exception("Missing parameter: $param");
+        $required = $intents[$intent]['parameters'] ?? [];
+        foreach ($required as $param) {
+            if (!isset($params[$param]) || trim((string)$params[$param]) === '') {
+                throw new Exception("Missing parameter: {$param}");
             }
         }
     }

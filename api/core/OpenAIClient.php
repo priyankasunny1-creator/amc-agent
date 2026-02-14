@@ -2,10 +2,6 @@
 
 class OpenAIClient
 {
-    /**
-     * Calls OpenAI Responses API and returns RAW TEXT output
-     * Used ONLY for intent classification (STEP 11)
-     */
     public static function classify(string $systemPrompt, string $userMessage): string
     {
         $apiKey = getenv('OPENAI_API_KEY');
@@ -14,8 +10,10 @@ class OpenAIClient
             throw new Exception('OPENAI_API_KEY not set');
         }
 
+        $cfg = require __DIR__ . '/../config/openai.php';
+
         $payload = [
-            'model' => 'gpt-4.1-mini',
+            'model' => $cfg['model'] ?? 'gpt-4.1-mini',
             'input' => [
                 [
                     'role' => 'system',
@@ -26,7 +24,8 @@ class OpenAIClient
                     'content' => $userMessage
                 ]
             ],
-            'temperature' => 0
+            'temperature' => $cfg['temperature'] ?? 0,
+            'max_output_tokens' => $cfg['max_tokens'] ?? 300
         ];
 
         $ch = curl_init('https://api.openai.com/v1/responses');
@@ -50,11 +49,8 @@ class OpenAIClient
 
         $decoded = json_decode($raw, true);
 
-        // ✅ Correct Responses API parsing
         if (!isset($decoded['output'][0]['content'][0]['text'])) {
-            throw new Exception(
-                'OpenAI returned empty or unexpected response: ' . $raw
-            );
+            throw new Exception('OpenAI returned empty or unexpected response: ' . $raw);
         }
 
         return trim($decoded['output'][0]['content'][0]['text']);
